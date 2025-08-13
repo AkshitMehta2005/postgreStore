@@ -1,5 +1,5 @@
-import { sql } from '../config/db.js';
-import redisClient from '../config/redisclient.js';
+import { sql } from "../config/db.js";
+import redisClient from "../config/redisclient.js";
 
 // GET ALL PRODUCTS — with Redis cache
 export const getProducts = async (req, res) => {
@@ -8,17 +8,20 @@ export const getProducts = async (req, res) => {
 
     if (cacheData) {
       console.log("Serving from Redis cache");
-      return res.status(200).json({ success: true, data: JSON.parse(cacheData) });
+      return res.status(200).json({
+        success: true,
+        data: JSON.parse(cacheData),
+      });
     }
 
     const products = await sql`SELECT * FROM products ORDER BY created_at DESC`;
 
     // Save to Redis cache for 1 hour
-    await redisClient.setEx("products", 3600, JSON.stringify(products));
+    await redisClient.set("products", JSON.stringify(products), "EX", 3600);
 
     res.status(200).json({ success: true, data: products });
   } catch (error) {
-    console.log("Error in getProducts function", error);
+    console.error("Error in getProducts function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
@@ -28,7 +31,9 @@ export const createProducts = async (req, res) => {
   const { name, image, price } = req.body;
 
   if (!name || !image || !price) {
-    return res.status(400).json({ success: false, message: "All fields are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "All fields are required" });
   }
 
   try {
@@ -47,7 +52,7 @@ export const createProducts = async (req, res) => {
       data: newProduct[0],
     });
   } catch (error) {
-    console.log("Error in createProducts function", error);
+    console.error("Error in createProducts function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
@@ -55,26 +60,36 @@ export const createProducts = async (req, res) => {
 // GET SINGLE PRODUCT — with Redis cache
 export const getProduct = async (req, res) => {
   const { id } = req.params;
- 
+
   try {
     const cacheData = await redisClient.get(`product:${id}`);
 
     if (cacheData) {
       console.log(`Serving product ${id} from Redis`);
-      return res.status(200).json({ success: true, data: JSON.parse(cacheData) });
+      return res.status(200).json({
+        success: true,
+        data: JSON.parse(cacheData),
+      });
     }
 
     const fetchProduct = await sql`SELECT * FROM products WHERE id = ${id}`;
 
     if (!fetchProduct.length) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
-    await redisClient.setEx(`product:${id}`, 3600, JSON.stringify(fetchProduct[0]));
+    await redisClient.set(
+      `product:${id}`,
+      JSON.stringify(fetchProduct[0]),
+      "EX",
+      3600
+    );
 
     res.status(200).json({ success: true, data: fetchProduct[0] });
   } catch (error) {
-    console.log("Error in getProduct function", error);
+    console.error("Error in getProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
@@ -93,7 +108,9 @@ export const updateProduct = async (req, res) => {
     `;
 
     if (updatedProduct.length === 0) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     // Clear both product list & specific product cache
@@ -102,7 +119,7 @@ export const updateProduct = async (req, res) => {
 
     res.status(200).json({ success: true, data: updatedProduct[0] });
   } catch (error) {
-    console.log("Error in updateProduct function", error);
+    console.error("Error in updateProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
@@ -119,7 +136,9 @@ export const deleteProduct = async (req, res) => {
     `;
 
     if (deletedProduct.length === 0) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     // Clear both product list & specific product cache
@@ -128,7 +147,7 @@ export const deleteProduct = async (req, res) => {
 
     res.status(200).json({ success: true, data: deletedProduct[0] });
   } catch (error) {
-    console.log("Error in deleteProduct function", error);
+    console.error("Error in deleteProduct function", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };

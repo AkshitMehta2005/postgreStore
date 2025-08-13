@@ -1,10 +1,7 @@
-// backend/config/redisClient.js
 import Redis from "ioredis";
 
-// Create a Redis client instance
-const redisClient = new Redis();
+const redisClient = new Redis(); // defaults to localhost:6379
 
-// Event listeners
 redisClient.on("connect", () => {
   console.log("Connected to Redis");
 });
