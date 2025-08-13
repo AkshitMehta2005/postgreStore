@@ -1,12 +1,16 @@
 // backend/config/redisClient.js
-import { createClient } from "redis";
+import Redis from "ioredis";
 
-const redisClient = createClient({
-  url: process.env.REDIS_URL || "redis://localhost:6379",
+// Create a Redis client instance
+const redisClient = new Redis();
+
+// Event listeners
+redisClient.on("connect", () => {
+  console.log("Connected to Redis");
 });
 
-redisClient.on("error", (err) => console.error("Redis Client Error", err));
-
-await redisClient.connect();
+redisClient.on("error", (err) => {
+  console.error("Redis Client Error", err);
+});
 
 export default redisClient;

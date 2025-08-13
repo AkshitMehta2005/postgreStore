@@ -55,7 +55,7 @@ export const createProducts = async (req, res) => {
 // GET SINGLE PRODUCT — with Redis cache
 export const getProduct = async (req, res) => {
   const { id } = req.params;
-
+ 
   try {
     const cacheData = await redisClient.get(`product:${id}`);
 
